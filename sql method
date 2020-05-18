@@ -1,0 +1,40 @@
+1. 
+select count(distinct(user_id)) 
+from table
+where country_id = 'BDV'
+group by site_id 
+
+
+2. 
+select user_id,site_id, count(*) as number_of_visits
+from table
+where date between '2019-02-03 00:00:00' and '2019-02-04 23:59:59'
+group by site_id,user_id
+having number_of_visits > 10 
+
+3. 
+with last_visit as(
+     select *,rank() over(partition by user_id order by date desc) as rank_1
+     from table
+
+) 
+## rank for each user so that we could know which record indicates the last visit
+
+select site_id,count(*) as number_of_users
+from last_visit
+where rank = 1
+group by site_id
+
+4. 
+with first_visit as(
+     select *,rank() over(partition by user_id order by date) as rank_2
+     from table
+
+) 
+## The difference is that order the date by ascending way
+
+select sum(case when l.site_id = f.site_id then 1 else 0 end)
+from first_visit f,last_visit l 
+where l.rank_1 = 1 and f.rank_2 = 1 and l.user_id = f.user_id
+
+## The motivation is to generate a new table containing columns for showing the customer's first and last visit
